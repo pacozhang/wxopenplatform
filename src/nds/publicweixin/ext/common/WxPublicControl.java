@@ -52,7 +52,6 @@ public class WxPublicControl {
 	}
 
 	public JSONObject getAccessToken() {
-		
 		JSONObject atoken=new JSONObject();
 		if(nds.util.Validator.isNull(wu.getAuthorizer_access_token())||wu.getAattime()<System.currentTimeMillis()) {
 			RefreshAccessToken rat=RefreshAccessToken.getInstance(this);
