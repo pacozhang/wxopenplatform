@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
@@ -46,11 +47,25 @@ public class WePopularizeSupport {
 		int validTime=pjo.optInt("validTime",604800);
 		String scene_id=pjo.optString("scene_id");
 
-		String token=wc.getAccessToken();
-		if(nds.util.Validator.isNull(token)) {
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
 			try {
 				jo.put("code", "-1");
-				jo.put("message", "请查看APPID与APPSECRET是否正确！");
+				jo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return jo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
+		if(nds.util.Validator.isNull(token)) {
+			try {
+				jo.put("code", -1);
+				jo.put("message", "请重新授权");
+				
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
@@ -111,11 +126,24 @@ public class WePopularizeSupport {
 		String ticket=null;
 		JSONObject jo=new JSONObject();
 		
-		String token=wc.getAccessToken();
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				jo.put("code", "-1");
+				jo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return jo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				jo.put("code", -1);
-				jo.put("message", "请查看APPID与APPSECRET是否正确！");
+				jo.put("message", "请重新授权");
 				
 			} catch (JSONException e) {
 				e.printStackTrace();
@@ -123,7 +151,6 @@ public class WePopularizeSupport {
 			return jo;
 		}
 		
-		String scene_id=pjo.optString("scene_id");
 		HashMap<String,String> paras=new HashMap<String,String>();
 		paras.put("access_token",token);
 
@@ -277,22 +304,52 @@ public class WePopularizeSupport {
 			}
 			
 			if(nds.util.Validator.isNotNull(logoPath)){
-				//读取头像图片，调整图片大小。
-				//byte[] bos =changePicSize(logo);
-				//ByteArrayInputStream bais = new ByteArrayInputStream(bos);
-				//BufferedImage bi1 =ImageIO.read(bais);
-				//URL url = new URL(logo);
-				//System.out.print(logo);
-				logger.debug("logoPath is："+logoPath);
-				try{
-					BufferedImage bi1=ImageUtils.getScaledInstance(logoPath,60,60,"png",true); 
-					//Image img = ImageIO.read(new File(ccbPath));//实例化一个Image对象。
-					//读取图片，设置图片在二维码中起始位置。
-					//System.out.print(imgSize);
-					gs.drawImage(bi1, 106,106, null);
-				}catch(Exception w){
-					logger.debug("logopath file is not find->"+logoPath);
+				//kunlun
+				boolean istf=logoPath.contains("http:");
+				if(istf==true){
+					String method="POST";
+					try {
+						FileInputStream fileinput = (FileInputStream) RestUtils.sendRequest_buffs(logoPath, null , method).get("message");
+						fileinput.close();
+						BufferedImage srcImage = ImageIO.read(fileinput);
+						
+						gs.drawImage(srcImage, 106,106, null);  
+					} catch (Exception e) {
+						// TODO: handle exception
+						logger.debug("logopath file is not find->"+logoPath);
+					}
+					
+				}else{
+					logger.debug("logoPath is："+logoPath);
+					try{
+						BufferedImage bi1=ImageUtils.getScaledInstance(logoPath,60,60,"png",true); 
+						//Image img = ImageIO.read(new File(ccbPath));//实例化一个Image对象。
+						//读取图片，设置图片在二维码中起始位置。
+						//System.out.print(imgSize);
+						gs.drawImage(bi1, 106,106, null);
+					}catch(Exception w){
+						logger.debug("logopath file is not find->"+logoPath);
+					}
 				}
+				//end
+				//之前的备份
+//				//读取头像图片，调整图片大小。
+//				//byte[] bos =changePicSize(logo);
+//				//ByteArrayInputStream bais = new ByteArrayInputStream(bos);
+//				//BufferedImage bi1 =ImageIO.read(bais);
+//				//URL url = new URL(logo);
+//				//System.out.print(logo);
+//				logger.debug("logoPath is："+logoPath);
+//				try{
+//					BufferedImage bi1=ImageUtils.getScaledInstance(logoPath,60,60,"png",true); 
+//					//Image img = ImageIO.read(new File(ccbPath));//实例化一个Image对象。
+//					//读取图片，设置图片在二维码中起始位置。
+//					//System.out.print(imgSize);
+//					gs.drawImage(bi1, 106,106, null);
+//				}catch(Exception w){
+//					logger.debug("logopath file is not find->"+logoPath);
+//				}
+				//end
 			}
 			gs.dispose();
 			bufImg.flush();

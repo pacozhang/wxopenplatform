@@ -53,7 +53,21 @@ public class WeMedia {
 		String returnr=null;
 		String url=we_uploadfile_URL;
 		JSONObject resultjo=new JSONObject();
-		String token=wc.getAccessToken();
+		
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				resultjo.put("code", -1);
@@ -198,7 +212,21 @@ public class WeMedia {
 		String url=we_downloadfile_URL;
 		
 		JSONObject resultjo=new JSONObject();
-		String token=wc.getAccessToken();
+		
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				resultjo.put("code", -1);
@@ -250,7 +278,22 @@ public class WeMedia {
 		String returnr=null;
 		String url=we_uploadImage_URL;
 		JSONObject resultjo=new JSONObject();
-		String token=wc.getAccessToken();
+		
+		
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				resultjo.put("code", -1);
@@ -261,7 +304,6 @@ public class WeMedia {
 			}
 			return resultjo;
 		}
-		
 		
 		ValueHolder vh=null;
 		File file =null;

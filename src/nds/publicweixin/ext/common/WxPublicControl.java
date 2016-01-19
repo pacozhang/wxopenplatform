@@ -51,18 +51,60 @@ public class WxPublicControl {
 		}
 	}
 
-	public String getAccessToken() {
+	public JSONObject getAccessToken() {
+		JSONObject atoken=new JSONObject();
 		if(nds.util.Validator.isNull(wu.getAuthorizer_access_token())||wu.getAattime()<System.currentTimeMillis()) {
 			RefreshAccessToken rat=RefreshAccessToken.getInstance(this);
-			JSONObject jo=rat.refreshAccessToken();
+			atoken=rat.refreshAccessToken();
+			JSONObject jo=null;
 			
-			if(jo!=null&&"0".equals(jo.optString("code"))) {
-				jo=jo.optJSONObject("data");
+			if(atoken!=null&&"0".equals(atoken.optString("code"))) {
+				jo=atoken.optJSONObject("data");
 				if(jo!=null&&jo.has("authorizer_access_token")) {wu.setAuthorizerinfo(jo);}
+			}else{
+				try{
+					atoken.put("code", "-1");
+					atoken.put("message", (jo!=null?jo.optString("message","失败"):"失败"));
+				}catch(Exception e){
+					
+				}
+			}
+		}else{
+			try{
+				atoken.put("code", "0");
+				atoken.put("message", "成功");
+				atoken.put("data", new JSONObject().put("authorizer_access_token", wu.getAuthorizer_access_token()));
+			}catch(Exception e){
+				e.printStackTrace();
 			}
 		}
 		
-		return wu.getAuthorizer_access_token();
+		
+		return atoken;
+		//return wu.getAuthorizer_access_token();
+	}
+	
+	public JSONObject getJssdk_access_token(){
+		JSONObject jstoken=new JSONObject();
+		if(nds.util.Validator.isNull(wu.getAuthorizer_access_token())||wu.getJssdktime()<System.currentTimeMillis()){
+			RefreshAccessToken rat=RefreshAccessToken.getInstance(this);
+			jstoken=rat.getJssdkAccessToken();
+			
+			logger.debug("getJssdk_access_token:"+jstoken);
+			if(jstoken!=null&&"0".equals(jstoken.optString("code"))) {
+				JSONObject jo=jstoken.optJSONObject("data");
+				if(jo!=null&&jo.has("ticket")) {wu.setJssdk_access_token(jo);}
+			}
+		}else{
+			try{
+				jstoken.put("code", "0");
+				jstoken.put("message", "成功");
+				jstoken.put("data", new JSONObject().put("ticket", wu.getJssdk_access_token()));
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}
+		return jstoken;
 	}
 	
 	public WeUtils getWxPublic() {

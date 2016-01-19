@@ -4,12 +4,14 @@ import java.sql.Connection;
 import java.util.Hashtable;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import nds.control.util.ValueHolder;
 import nds.control.web.WebUtils;
 import nds.log.Logger;
 import nds.log.LoggerManager;
+import nds.publicweixin.ext.common.WxPublicControl;
 import nds.publicweixin.ext.tools.RestUtils;
 import nds.query.QueryEngine;
 import nds.security.User;
@@ -39,7 +41,7 @@ public class WeBatchGetMaterial {
 		return instance;
 	}
 	
-	public JSONObject getAllMaterials(User user,String type,String token) throws Exception{
+	public JSONObject getAllMaterials(WxPublicControl wc,User user,String type) throws Exception{
 		JSONObject resultjo=new JSONObject();
 		
 		JSONObject newsjo=null;
@@ -65,6 +67,31 @@ public class WeBatchGetMaterial {
 		ValueHolder hd =null;
 		
 		ValueHolder counthd =null;
+		
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
+		if(nds.util.Validator.isNull(token)) {
+			try {
+				resultjo.put("code", -1);
+				resultjo.put("message", "请重新授权");
+				
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			return resultjo;
+		}
 		counthd=RestUtils.sendRequest_buff(we_getMaterialCount_URL+token, "", "POST");
 		logger.debug("test we_getMaterialCount"+counthd.get("message").toString());
 		JSONObject countjo = new JSONObject(counthd.get("message").toString());
@@ -76,7 +103,7 @@ public class WeBatchGetMaterial {
 				resultjo.put("message", "获取失败,news_count为"+news_count);
 				return resultjo;
 			}else{
-				getAllMaterials(user,"image",token);
+				getAllMaterials(wc,user,"image");
 				count=news_count>=20?20:news_count;
 				logger.debug("每页素材数 news_count-->"+count);
 			}
@@ -106,7 +133,7 @@ public class WeBatchGetMaterial {
 			
 			//先把当前类型全部不可用,再循环比较,更新或插入数据
 
-			QueryEngine.getInstance().executeUpdate("update wx_media set ISACTIVE='N' where ad_client_id=? and mtype=?",new Object[] { user.adClientId,type},con);
+			QueryEngine.getInstance().executeUpdate("update wx_media set ISACTIVE='N' where ad_client_id=? and mtype=?",new Object[] { wc.getWxPublic().getAd_client_id(),type},con);
 			do{
 				QQPARAM = "{\"type\":\""+type+"\",\"offset\":"+offset+",\"count\":"+count+"}";
 				hd=RestUtils.sendRequest_buff(we_getAllMaterial_URL+token, QQPARAM, "POST");
@@ -129,7 +156,7 @@ public class WeBatchGetMaterial {
 					int recordCount = Integer.parseInt(QueryEngine
 							.getInstance()
 							.doQueryOne(existsql,
-									new Object[] { user.adClientId, media_id},con)
+									new Object[] { wc.getWxPublic().getAd_client_id(), media_id},con)
 							.toString());
 					if(recordCount>0){
 /*						sql = "update wx_media set CREATED_AT=?,OWNERID=?,MODIFIERID=?,MODIFIEDDATE=sysdate,CONTENT=?,NAME=?,UPFILE=?,ISACTIVE='Y'  where ad_client_id=? and media_id=?";
@@ -140,16 +167,16 @@ public class WeBatchGetMaterial {
 					}else{
 						sql = "insert into wx_media(id,ad_client_id,ad_org_id,MEDIA_ID,MTYPE,CREATED_AT,OWNERID,MODIFIERID,CREATIONDATE,MODIFIEDDATE,CONTENT,NAME,UPFILE)"
 								+" values(get_sequences('wx_media'),?,?,?,?,?,?,?,sysdate,sysdate,?,?,?)";
-						QueryEngine.getInstance().executeUpdate(sql, new Object[]{user.adClientId,user.adOrgId,media_id,type,update_time,user.id,user.id,content,name,url},con);
+						QueryEngine.getInstance().executeUpdate(sql, new Object[]{wc.getWxPublic().getAd_client_id(),user.adOrgId,media_id,type,update_time,user.id,user.id,content,name,url},con);
 					}
 					
 					if("news".equals(type)&&newsjo.optJSONObject("content")!=null){
 						JSONArray news_item = newsjo.optJSONObject("content").optJSONArray("news_item");
 						String getIdsql="select id from wx_media where ad_client_id=? and media_id=?  ";
-						String mediaid=QueryEngine.getInstance().doQueryOne(getIdsql,  new Object[]{user.adClientId,media_id}).toString();
+						String mediaid=QueryEngine.getInstance().doQueryOne(getIdsql,  new Object[]{wc.getWxPublic().getAd_client_id(),media_id}).toString();
 						
 						//先把图文明细全部不可用,再循环比较,更新或插入数据
-						QueryEngine.getInstance().executeUpdate("update wx_thumb_media set ISACTIVE='N' where ad_client_id=? and wx_media_id=?",new Object[] { user.adClientId, mediaid},con);
+						QueryEngine.getInstance().executeUpdate("update wx_thumb_media set ISACTIVE='N' where ad_client_id=? and wx_media_id=?",new Object[] { wc.getWxPublic().getAd_client_id(), mediaid},con);
 
 						String itemsql;
 						String title,thumb_media_id,show_cover_pic,author,digest,itemcontent,itemurl,content_source_url;
@@ -167,15 +194,15 @@ public class WeBatchGetMaterial {
 							int itemCount = Integer.parseInt(QueryEngine
 									.getInstance()
 									.doQueryOne(existitemsql,
-											new Object[] { user.adClientId, thumb_media_id,mediaid,ic},con)
+											new Object[] { wc.getWxPublic().getAd_client_id(), thumb_media_id,mediaid,ic},con)
 									.toString());
 							if(itemCount>0){
 								itemsql = "update wx_thumb_media set TITLE=?, SHOW_COVER_PIC=?, AUTHOR=?, DIGEST=?, CONTENT=?, URL=?, CONTENT_SOURCE_URL=?, MODIFIEDDATE=sysdate, ISACTIVE='Y' where ad_client_id=? and thumb_media_id=? and wx_media_id=? and thumb_index=?";
-								QueryEngine.getInstance().executeUpdate(itemsql,  new Object[]{title,show_cover_pic,author,digest,itemcontent,itemurl,content_source_url,user.adClientId,thumb_media_id,mediaid,ic},con);
+								QueryEngine.getInstance().executeUpdate(itemsql,  new Object[]{title,show_cover_pic,author,digest,itemcontent,itemurl,content_source_url,wc.getWxPublic().getAd_client_id(),thumb_media_id,mediaid,ic},con);
 							}else{
 								itemsql="insert into wx_thumb_media (ID, AD_CLIENT_ID, AD_ORG_ID, TITLE, THUMB_MEDIA_ID, SHOW_COVER_PIC, AUTHOR, DIGEST, CONTENT, URL, CONTENT_SOURCE_URL, WX_MEDIA_ID, THUMB_INDEX, OWNERID, MODIFIERID, CREATIONDATE, MODIFIEDDATE, ISACTIVE) "
 										+ "values (get_sequences('wx_thumb_media'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, sysdate, sysdate, 'Y')";
-								QueryEngine.getInstance().executeUpdate(itemsql, new Object[]{user.adClientId,user.adOrgId,title,thumb_media_id,show_cover_pic,author,digest,itemcontent,itemurl,content_source_url,mediaid,ic,user.id,user.id},con);
+								QueryEngine.getInstance().executeUpdate(itemsql, new Object[]{wc.getWxPublic().getAd_client_id(),user.adOrgId,title,thumb_media_id,show_cover_pic,author,digest,itemcontent,itemurl,content_source_url,mediaid,ic,user.id,user.id},con);
 							}
 						}
 					}

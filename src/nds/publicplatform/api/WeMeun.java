@@ -63,7 +63,20 @@ public class WeMeun {
 		JSONObject sumo=null;
 		JSONObject jomenus=null;
 		String url=weCreateURL;
-		String token=wpc.getAccessToken();
+		JSONObject atoken=wpc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				jo.put("code", "-1");
+				jo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return jo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				jo.put("code", -1);
@@ -163,10 +176,23 @@ public class WeMeun {
 		
 	public JSONObject getMenus(){
 		String result=null;
-		JSONObject jo=null;
-		String token=wpc.getAccessToken();
+		JSONObject jo=new JSONObject();
+		
+		JSONObject atoken=wpc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				jo.put("code", "-1");
+				jo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return jo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
-			jo=new JSONObject();
 			try {
 				jo.put("code", -1);
 				jo.put("message", "请重新授权");

@@ -52,6 +52,7 @@ public class WxPublicpartyControl {
 
 	public JSONObject getAccessToken() {
 		JSONObject atjo=new JSONObject();
+		logger.debug("wpp.getcattime:"+wpp.getCattime()+",ctime:"+System.currentTimeMillis());
 		if(nds.util.Validator.isNull(wpp.getComponent_access_token())||wpp.getCattime()<System.currentTimeMillis()) {
 			GetPublicpartyAccessToken gat=new GetPublicpartyAccessToken();
 			atjo=gat.getAccessToken(this);

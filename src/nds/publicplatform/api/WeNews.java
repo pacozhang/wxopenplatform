@@ -51,7 +51,20 @@ public class WeNews {
 		String returnr=null;
 		String url=we_uploadnews_URL;
 		JSONObject resultjo=new JSONObject();
-		String token=wc.getAccessToken();
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				resultjo.put("code", -1);
@@ -116,7 +129,20 @@ public class WeNews {
 		String url=we_downloadnews_URL;
 		
 		JSONObject resultjo=new JSONObject();
-		String token=wc.getAccessToken();
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				resultjo.put("code", -1);
@@ -194,7 +220,20 @@ public class WeNews {
 		String returnr=null;
 		String url=we_updatenews_URL;
 		JSONObject resultjo=new JSONObject();
-		String token=wc.getAccessToken();
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				resultjo.put("code", -1);
@@ -292,11 +331,25 @@ public class WeNews {
 		String url=we_removeMedia_URL;
 		
 		JSONObject resultjo=new JSONObject();
-		String token=wc.getAccessToken();
+		JSONObject atoken=wc.getAccessToken();
+		//判断ACCESSTOKEN是否获取成功
+		if(atoken==null||!"0".equals(atoken.optString("code"))) {
+			try {
+				resultjo.put("code", "-1");
+				resultjo.put("message", "请重新授权");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			
+			return resultjo;
+		}
+				
+		String token=atoken.optJSONObject("data").optString("authorizer_access_token");
 		if(nds.util.Validator.isNull(token)) {
 			try {
 				resultjo.put("code", -1);
 				resultjo.put("message", "请重新授权");
+				
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
